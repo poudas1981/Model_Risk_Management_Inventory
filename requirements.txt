@@ -1,0 +1,8 @@
+pandas
+cProfile
+streamlit
+plotly
+pandas
+streamlit_dynamic_filters 
+altair
+cufflinks
