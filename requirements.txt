@@ -1,5 +1,4 @@
 pandas
-cProfile
 streamlit
 plotly
 pandas
