@@ -6,3 +6,4 @@ streamlit_dynamic_filters
 altair
 cufflinks
 fsspec
+requests
