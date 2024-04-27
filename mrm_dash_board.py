@@ -76,7 +76,7 @@ def groupfct(dataset, vr_nm):
     dat_agg = dat.groupby(vr_nm).aggregate(cnt = pd.NamedAgg(column='Name of Model', aggfunc='count')).reset_index()
     return dat_agg
 
-data_path = "https://github.com/poudas1981/Model_Risk_Management_Inventory/tree/main/MRM_FAKE_DATA.csv?raw=true"
+data_path = "https://github.com/poudas1981/Model_Risk_Management_Inventory/blob/e51aa596934e5128d6bff6d8e3424457b4026512/MRM_FAKE_DATA.csv"
 
 
 ### Load dataset ###
