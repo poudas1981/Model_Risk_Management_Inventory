@@ -80,8 +80,8 @@ data_path = "https://github.com/poudas1981/Model_Risk_Management_Inventory/tree/
 
 
 ### Load dataset ###
-data = load_csv_data(file_nm = data_path)
-
+# data = load_csv_data(file_nm = data_path)
+data = pd.read_csv(data_path)
 risk_rating = groupfct(dataset = data, vr_nm = 'Risk Rank')
 # st.write(risk_rating)
 ML_DATA = groupfct(dataset = data, vr_nm = 'Machine Learning')
