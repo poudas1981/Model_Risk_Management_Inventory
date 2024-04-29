@@ -7,3 +7,4 @@ altair
 cufflinks
 fsspec
 requests
+matplotlib
