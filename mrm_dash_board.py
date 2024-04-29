@@ -6,6 +6,7 @@ from streamlit_dynamic_filters import DynamicFilters
 import altair as alt
 import cufflinks as cf
 import requests
+import StringIO
 
 st.set_page_config(layout="wide", initial_sidebar_state="expanded")
 alt.themes.enable("dark")
@@ -82,7 +83,8 @@ data_path = "https://github.com/poudas1981/Model_Risk_Management_Inventory/blob/
 
 ### Load dataset ###
 # data = load_csv_data(file_nm = data_path)
-data = pd.read_csv(data_path)
+# data = pd.read_csv(data_path)
+data = pd.read_csv('MRM_FAKE_DATA.csv')
 risk_rating = groupfct(dataset = data, vr_nm = 'Risk Rank')
 # st.write(risk_rating)
 ML_DATA = groupfct(dataset = data, vr_nm = 'Machine Learning')
