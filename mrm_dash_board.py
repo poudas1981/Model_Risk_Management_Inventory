@@ -6,7 +6,6 @@ from streamlit_dynamic_filters import DynamicFilters
 import altair as alt
 import cufflinks as cf
 import requests
-import StringIO
 
 st.set_page_config(layout="wide", initial_sidebar_state="expanded")
 alt.themes.enable("dark")
