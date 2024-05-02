@@ -213,7 +213,7 @@ data_path = "C://Users//merli//OneDrive//Streamlit//dataset//MRM_FAKE_DATA.csv"
 
 
 ### Load dataset ###
-data = load_csv_data(file_nm = data_path)
+data = load_csv_data(file_nm = 'MRM_FAKE_DATA.csv')
 
 risk_rating = groupfct(dataset = data, vr_nm = 'Risk Rank')
 # st.write(risk_rating)
