@@ -6,12 +6,14 @@ from streamlit_dynamic_filters import DynamicFilters
 import altair as alt
 import cufflinks as cf
 import requests
+import streamlit.components.v1 as components
 from pandas.api.types import (
     is_categorical_dtype,
     is_datetime64_any_dtype,
     is_numeric_dtype,
     is_object_dtype,
 )
+from datetime import date
 
 st.set_page_config(layout="wide", initial_sidebar_state="expanded")
 alt.themes.enable("dark")
@@ -64,6 +66,55 @@ st.markdown("""
 
 </style>
 """, unsafe_allow_html=True)
+
+def model_owner(df):
+    nm_list = df['Model Owner'].unique()
+    name_ = st.selectbox(label='Select your Name', options=nm_list)
+    dat = df[df['Model Owner'] == name_]
+    dat = dat[['Name of Model', 'Risk Rank', 'Next Validation Start Date']]
+    dat.drop_duplicates(['Name of Model', 'Risk Rank', 'Next Validation Start Date'], inplace=True)
+    dat['Next Validation Start Date'] = pd.to_datetime(dat['Next Validation Start Date'])
+    dat['today'] = date.today()
+    dat['today'] = pd.to_datetime(dat['today'])
+    diff = []
+    for i in range(dat.shape[0]):
+        delta = dat['today'].tolist()[i] -  dat['Next Validation Start Date'].tolist()[i]
+        diff.append(delta.days)
+    dat['day_diff'] = diff
+    dat.sort_values(by = 'day_diff', ascending = False, inplace=True)
+    return st.write(dat)
+def data_plot(df):
+    collist = df.columns.tolist()
+    bar_axis = st.selectbox(label="Bar Chart Model Type", options=collist, placeholder ='Risk Rank')
+    if bar_axis:
+        st.title(f'Bar Chart: {bar_axis}')
+        agg_data = groupfct(dataset = df, vr_nm = bar_axis)
+        bar_fig = get_bar_chart(dataset = agg_data, x_var_nm = bar_axis, y_var_nm = 'cnt')
+        pie_fig = agg_data.iplot(kind="pie", labels=bar_axis, values="cnt",
+                        title=f"Distribution Per {bar_axis}",
+                        hole=0.4,
+                        asFigure=True)
+    else:
+        st.title('Bar Chart: Risk Rank')
+        agg_data = groupfct(dataset = df, vr_nm = 'Risk Rank')
+        bar_fig = get_bar_chart(dataset = agg_data, x_var_nm = 'Risk Rank', y_var_nm = 'cnt')
+        pie_fig = agg_data.iplot(kind="pie", labels='Risk Rank', values="cnt",
+                        title=f"Distribution Per Risk Rank",
+                        hole=0.4,
+                        asFigure=True)
+    modification_container = st.container()
+    with modification_container:
+        col11, col22 = st.columns(2)
+        with col11:
+            bar_fig
+        with col22:
+            pie_fig
+
+
+@st.cache_data
+def load_csv_data(file_nm):
+    data = pd.read_csv(file_nm)
+    return data
 
 def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -140,10 +191,6 @@ def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
     return df
 
-@st.cache_data
-def load_csv_data(file_nm):
-    data = pd.read_csv(file_nm)
-    return data
 
 @st.cache_data
 def get_bar_chart(dataset, x_var_nm, y_var_nm):
@@ -152,19 +199,22 @@ def get_bar_chart(dataset, x_var_nm, y_var_nm):
 
 def groupfct(dataset, vr_nm):
     col_list = ['Name of Model']
-    col_list.append(vr_nm)
-    dat = dataset[col_list]
-    dat.drop_duplicates(col_list, inplace = True)
-    dat_agg = dat.groupby(vr_nm).aggregate(cnt = pd.NamedAgg(column='Name of Model', aggfunc='count')).reset_index()
+    if vr_nm == 'Name of Model':
+        dat_agg = pd.DataFrame(data[['Name of Model']].value_counts()).reset_index()
+        dat_agg.rename(columns={'count':'cnt'}, inplace=True)
+    else:
+        col_list.append(vr_nm)
+        dat = dataset[col_list]
+        dat.drop_duplicates(col_list, inplace = True)
+        dat_agg = dat.groupby(vr_nm).aggregate(cnt = pd.NamedAgg(column='Name of Model', aggfunc='nunique')).reset_index()
     return dat_agg
 
-data_path = "https://github.com/poudas1981/Model_Risk_Management_Inventory/blob/e51aa596934e5128d6bff6d8e3424457b4026512/MRM_FAKE_DATA.csv"
+data_path = "C://Users//merli//OneDrive//Streamlit//dataset//MRM_FAKE_DATA.csv"
 
 
 ### Load dataset ###
-# data = load_csv_data(file_nm = data_path)
-# data = pd.read_csv(data_path)
-data = pd.read_csv('MRM_FAKE_DATA.csv')
+data = load_csv_data(file_nm = data_path)
+
 risk_rating = groupfct(dataset = data, vr_nm = 'Risk Rank')
 # st.write(risk_rating)
 ML_DATA = groupfct(dataset = data, vr_nm = 'Machine Learning')
@@ -177,12 +227,12 @@ graph = st.container()
 tab1, tab2 = st.columns(2)
 # st.write(data.head())
 ########## Bar Chart Logic ##################
-drop_var = ['Key Field',	'Model ID Number',	'Model Sub-ID',	'Name of Model',	'Submodel',	'Feeder Model',	'Data Source', 'Comments', 'Inventory Date', 'Implementation Date']
+drop_var = ['Key Field',	'Model ID Number',	'Model Sub ID',	'Name of Model',	'Submodel',	'Feeder Model',	'Data Source', 'Comments', 'Inventory Date', 'Implementation Date']
 collist = data.drop(drop_var, axis=1).columns.tolist()
 dat3 = data[['Model Owner', 'Risk Rank', 'Model ID Number']]
 table = pd.pivot_table(dat3, values= 'Model ID Number', index=['Model Owner'],
                        columns=['Risk Rank'], aggfunc="count").reset_index()
-dat3_agg = dat3.groupby(['Model Owner', 'Risk Rank']).aggregate(cnt = pd.NamedAgg(column = 'Model ID Number', aggfunc = 'count')).reset_index()
+dat3_agg = dat3.groupby(['Model Owner', 'Risk Rank']).aggregate(cnt = pd.NamedAgg(column = 'Model ID Number', aggfunc = 'nunique')).reset_index()
 barfig = table.plot.bar(x='Model Owner', stacked=True, title='The number of model')
 chart = alt.Chart(dat3_agg).mark_bar().encode(
         x = alt.X('Model Owner',title="Model Owner",type="nominal")
@@ -198,42 +248,23 @@ bar_fig2 = table.iplot(kind="bar",
                         asFigure=True,
                         opacity=1.0,
                         )
-
+data2 = data.copy()
+drop_var2 = ['Key Field', 'Model Sub ID',	'Submodel',	'Feeder Model',	'Data Source', 'Comments', 'Inventory Date', 'Implementation Date']
+data2.drop_duplicates(drop_var2, inplace=True)
 with graph:
     st.title('Summary Statistics')
     tab1, tab2, tab3 = st.tabs(["Data Analysis", "Data Filtering", "Model Owner"])
     with tab1:
-        col11, col12 = st.columns(2)
-        bar_axis = st.sidebar.selectbox(label="Bar Chart Model Type", options=collist, placeholder ='Risk Rank')
-        if bar_axis:
-            st.sidebar.title(f'Bar Chart: {bar_axis}')
-            agg_data = groupfct(dataset = data, vr_nm = bar_axis)
-            bar_fig = get_bar_chart(dataset = agg_data, x_var_nm = bar_axis, y_var_nm = 'cnt')
-            pie_fig = agg_data.iplot(kind="pie", labels=bar_axis, values="cnt",
-                         title=f"Distribution Per {bar_axis}",
-                         hole=0.4,
-                         asFigure=True)
-        else:
-            st.sidebar.title('Bar Chart: Risk Rank')
-            agg_data = groupfct(dataset = data, vr_nm = 'Risk Rank')
-            bar_fig = get_bar_chart(dataset = agg_data, x_var_nm = 'Risk Rank', y_var_nm = 'cnt')
-            pie_fig = agg_data.iplot(kind="pie", labels='Risk Rank', values="cnt",
-                         title=f"Distribution Per Risk Rank",
-                         hole=0.4,
-                         asFigure=True)
-        x = st.slider(label ='Select the Number of rows ro display', min_value=5, max_value=30)
-        st.write(data.head(x))
-        with col11:
-            bar_fig
-        with col12:
-            pie_fig
-    with tab3:
-        col11, col12 = st.columns(2)
-        with col11:
-            st.altair_chart(chart,use_container_width=True,theme="streamlit")
+        data_plot(data2)
     with tab2:
-        st.title("Model Inventory Play Book.")
-        st.dataframe(filter_dataframe(data))
+        st.dataframe(filter_dataframe(data2))
+    with tab3:
+        st.title("Model Owner Play Book")
+        st.altair_chart(chart,use_container_width=True,theme="streamlit")
+        model_owner(df= data)
+
+    # with tab2:
+    #     st.dataframe(filter_dataframe(data))
         # dynamic_filters2 = DynamicFilters(data, filters=collist)
         # dynamic_filters2.display_filters(location='sidebar')
         # dynamic_filters2.display_df()
