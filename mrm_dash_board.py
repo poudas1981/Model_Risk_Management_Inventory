@@ -78,7 +78,7 @@ def model_owner(df):
     dat['today'] = pd.to_datetime(dat['today'])
     diff = []
     for i in range(dat.shape[0]):
-        delta = dat['today'].tolist()[i] -  dat['Next Validation Start Date'].tolist()[i]
+        delta = dat['Next Validation Start Date'].tolist()[i] - dat['today'].tolist()[i] 
         diff.append(delta.days)
     dat['day_diff'] = diff
     dat.sort_values(by = 'day_diff', ascending = False, inplace=True)
