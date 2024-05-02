@@ -281,4 +281,3 @@ with graph:
     #         bar_fig2
     #         barfig.set_ylim(0,500)
             
-st.button("Rerun")
