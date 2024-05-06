@@ -67,6 +67,55 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+def filter_date(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Adds a UI on top of a dataframe to let viewers filter columns
+
+    Args:
+        df (pd.DataFrame): Original dataframe
+
+    Returns:
+        pd.DataFrame: Filtered dataframe
+    """
+    st.markdown("### Filter based on validation date.")
+    modify2 = st.checkbox("Select Variable")
+
+    if not modify2:
+        return df
+
+    df = df.copy()
+
+    # Try to convert datetimes into a standard format (datetime, no timezone)
+    datecol = []
+    for col in df.columns:
+        if is_object_dtype(df[col]):
+            try:
+                df[col] = pd.to_datetime(df[col])
+            except Exception:
+                pass
+
+        if is_datetime64_any_dtype(df[col]):
+            df[col] = df[col].dt.tz_localize(None)
+            datecol.append(col)
+
+    modification_container = st.container()
+    with modification_container:
+        to_filter_columns = st.multiselect("Filter dataframe on", datecol)
+        for column in to_filter_columns:
+            left, right = st.columns((1, 20))  
+            user_date_input = right.date_input(
+                f"Values for {column}",
+                    value=(
+                        df[column].min(),
+                        df[column].max(),
+                    ),
+                )
+            if len(user_date_input) == 2:
+                user_date_input = tuple(map(pd.to_datetime, user_date_input))
+                start_date, end_date = user_date_input
+                df = df.loc[df[column].between(start_date, end_date)] 
+    return df 
+
 def model_owner(df):
     nm_list = df['Model Owner'].unique()
     name_ = st.selectbox(label='Select your Name', options=nm_list)
@@ -78,7 +127,7 @@ def model_owner(df):
     dat['today'] = pd.to_datetime(dat['today'])
     diff = []
     for i in range(dat.shape[0]):
-        delta = dat['Next Validation Start Date'].tolist()[i] - dat['today'].tolist()[i] 
+        delta = dat['Next Validation Start Date'].tolist()[i] - dat['today'].tolist()[i]
         diff.append(delta.days)
     dat['day_diff'] = diff
     dat.sort_values(by = 'day_diff', ascending = False, inplace=True)
@@ -116,7 +165,7 @@ def load_csv_data(file_nm):
     data = pd.read_csv(file_nm)
     return data
 
-def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
+def filter_dataframe(df: pd.DataFrame, Widget_nm) -> pd.DataFrame:
     """
     Adds a UI on top of a dataframe to let viewers filter columns
 
@@ -126,7 +175,8 @@ def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         pd.DataFrame: Filtered dataframe
     """
-    modify = st.checkbox("Add filters")
+    modify = st.checkbox(Widget_nm)
+    # modify = st.checkbox("Add filters")
 
     if not modify:
         return df
@@ -134,6 +184,7 @@ def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
 
     # Try to convert datetimes into a standard format (datetime, no timezone)
+    datecol = []
     for col in df.columns:
         if is_object_dtype(df[col]):
             try:
@@ -143,6 +194,7 @@ def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
         if is_datetime64_any_dtype(df[col]):
             df[col] = df[col].dt.tz_localize(None)
+            datecol.append(col)
 
     modification_container = st.container()
 
@@ -170,7 +222,7 @@ def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
                     step=step,
                 )
                 df = df[df[column].between(*user_num_input)]
-            elif is_datetime64_any_dtype(df[column]):
+            elif column in datecol:
                 user_date_input = right.date_input(
                     f"Values for {column}",
                     value=(
@@ -210,7 +262,7 @@ def groupfct(dataset, vr_nm):
     return dat_agg
 
 data_path = "C://Users//merli//OneDrive//Streamlit//dataset//MRM_FAKE_DATA.csv"
-
+issue_path = "C://Users//merli//OneDrive//Streamlit//dataset//issue.csv"
 
 ### Load dataset ###
 data = load_csv_data(file_nm = 'MRM_FAKE_DATA.csv')
@@ -258,11 +310,12 @@ with graph:
     with tab1:
         data_plot(data2)
     with tab2:
-        st.dataframe(filter_dataframe(data2))
+        st.dataframe(filter_dataframe(data2, "Add filters"))
     with tab3:
         st.title("Model Owner Play Book")
         st.altair_chart(chart,use_container_width=True,theme="streamlit")
         model_owner(df= data)
+        st.dataframe(filter_date(data2))
     with tab4:
         st.markdown("### Model Validation Issues")
         st.dataframe(filter_dataframe(issue, "Select Attributes"))
@@ -285,3 +338,4 @@ with graph:
     #         bar_fig2
     #         barfig.set_ylim(0,500)
             
+st.button("Rerun")
