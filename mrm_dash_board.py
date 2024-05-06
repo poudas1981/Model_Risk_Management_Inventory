@@ -214,7 +214,8 @@ data_path = "C://Users//merli//OneDrive//Streamlit//dataset//MRM_FAKE_DATA.csv"
 
 ### Load dataset ###
 data = load_csv_data(file_nm = 'MRM_FAKE_DATA.csv')
-
+issue = pd.read_csv('issue.csv' , encoding='cp1252')
+issue.drop(['Issue Number',	'AuditBoard Number'], axis=1, inplace=True)
 risk_rating = groupfct(dataset = data, vr_nm = 'Risk Rank')
 # st.write(risk_rating)
 ML_DATA = groupfct(dataset = data, vr_nm = 'Machine Learning')
@@ -253,7 +254,7 @@ drop_var2 = ['Key Field', 'Model Sub ID',	'Submodel',	'Feeder Model',	'Data Sour
 data2.drop_duplicates(drop_var2, inplace=True)
 with graph:
     st.title('Summary Statistics')
-    tab1, tab2, tab3 = st.tabs(["Data Analysis", "Data Filtering", "Model Owner"])
+    tab1, tab2, tab3,tab4 = st.tabs(["Data Analysis", "Data Filtering", "Model Owner", "Validation Issues"])
     with tab1:
         data_plot(data2)
     with tab2:
@@ -262,6 +263,9 @@ with graph:
         st.title("Model Owner Play Book")
         st.altair_chart(chart,use_container_width=True,theme="streamlit")
         model_owner(df= data)
+    with tab4:
+        st.markdown("### Model Validation Issues")
+        st.dataframe(filter_dataframe(issue, "Select Attributes"))
 
     # with tab2:
     #     st.dataframe(filter_dataframe(data))
